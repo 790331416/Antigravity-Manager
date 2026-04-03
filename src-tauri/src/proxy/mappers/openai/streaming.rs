@@ -476,6 +476,8 @@ where
 
         let mut emitted_tool_calls = std::collections::HashSet::new();
         let mut accumulated_text = String::new();
+        let mut final_tool_calls_event_data = Vec::new();
+        let mut tool_call_index = 0;
         let mut heartbeat_interval = tokio::time::interval(std::time::Duration::from_secs(15));
         heartbeat_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
@@ -535,7 +537,67 @@ where
                                                         if let Some(func_call) = part.get("functionCall") {
                                                             let call_key = serde_json::to_string(func_call).unwrap_or_default();
                                                             if !emitted_tool_calls.contains(&call_key) {
-                                                                emitted_tool_calls.insert(call_key);
+                                                                emitted_tool_calls.insert(call_key.clone());
+                                                                
+                                                                let name = func_call.get("name").and_then(|v| v.as_str()).unwrap_or("unknown");
+                                                                let args = func_call.get("args").unwrap_or(&json!({})).clone();
+                                                                let args_str = serde_json::to_string(&args).unwrap_or_default();
+                                                                
+                                                                let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                                                                use std::hash::{Hash, Hasher};
+                                                                call_key.hash(&mut hasher);
+                                                                let call_id = format!("call_{:x}", hasher.finish());
+                                                                
+                                                                // 1. function_call output item added
+                                                                let fc_added = json!({
+                                                                    "type": "response.output_item.added",
+                                                                    "output_index": 0,
+                                                                    "item": {
+                                                                        "id": &call_id,
+                                                                        "type": "function_call",
+                                                                        "status": "in_progress",
+                                                                        "name": name,
+                                                                        "call_id": &call_id,
+                                                                        "arguments": ""
+                                                                    }
+                                                                });
+                                                                yield Ok::<Bytes, String>(Bytes::from(format!("event: response.output_item.added\ndata: {}\n\n", serde_json::to_string(&fc_added).unwrap())));
+                                                                
+                                                                // 2. arguments done
+                                                                let fc_args_done = json!({
+                                                                    "type": "response.function_call_arguments.done",
+                                                                    "item_id": &call_id,
+                                                                    "output_index": 0,
+                                                                    "call_id": &call_id,
+                                                                    "name": name,
+                                                                    "arguments": &args_str
+                                                                });
+                                                                yield Ok::<Bytes, String>(Bytes::from(format!("event: response.function_call_arguments.done\ndata: {}\n\n", serde_json::to_string(&fc_args_done).unwrap())));
+                                                                
+                                                                // 3. output item done
+                                                                let fc_done = json!({
+                                                                    "type": "response.output_item.done",
+                                                                    "output_index": 0,
+                                                                    "item": {
+                                                                        "id": &call_id,
+                                                                        "type": "function_call",
+                                                                        "status": "completed",
+                                                                        "name": name,
+                                                                        "call_id": &call_id,
+                                                                        "arguments": &args_str
+                                                                    }
+                                                                });
+                                                                yield Ok::<Bytes, String>(Bytes::from(format!("event: response.output_item.done\ndata: {}\n\n", serde_json::to_string(&fc_done).unwrap())));
+                                                                
+                                                                final_tool_calls_event_data.push(json!({
+                                                                    "id": &call_id,
+                                                                    "type": "function_call",
+                                                                    "status": "completed",
+                                                                    "name": name,
+                                                                    "call_id": &call_id,
+                                                                    "arguments": &args_str
+                                                                }));
+                                                                tool_call_index += 1;
                                                             }
                                                         }
                                                     }
@@ -633,21 +695,24 @@ where
         yield Ok::<Bytes, String>(Bytes::from(format!("event: response.output_item.done\ndata: {}\n\n", serde_json::to_string(&output_item_done).unwrap())));
 
         // 8. response.completed
+        let mut output_payloads = vec![json!({
+            "id": &item_id,
+            "type": "message",
+            "role": "assistant",
+            "content": [{
+                "type": "output_text",
+                "text": &accumulated_text
+            }]
+        })];
+        output_payloads.extend(final_tool_calls_event_data);
+
         let completed_ev = json!({
             "type": "response.completed",
             "response": {
                 "id": &response_id,
                 "object": "response",
                 "status": "completed",
-                "output": [{
-                    "id": &item_id,
-                    "type": "message",
-                    "role": "assistant",
-                    "content": [{
-                        "type": "output_text",
-                        "text": &accumulated_text
-                    }]
-                }]
+                "output": output_payloads
             }
         });
         yield Ok::<Bytes, String>(Bytes::from(format!("event: response.completed\ndata: {}\n\n", serde_json::to_string(&completed_ev).unwrap())));
