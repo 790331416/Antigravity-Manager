@@ -295,11 +295,11 @@ export const CliSyncCard = ({ proxyUrl, apiKey, className }: CliSyncCardProps) =
                     {!isAppLoading && (status?.installed || app === 'Codex' || app === 'OpenCode' && status?.current_base_url) && (
                         <div className={cn(
                             "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wide transition-all h-6 shrink-0 whitespace-nowrap shadow-sm",
-                            status.is_synced
+                            status?.is_synced
                                 ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white"
                                 : "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 border border-amber-200/50 dark:border-amber-800/30"
                         )}>
-                            {status.is_synced ? (
+                            {status?.is_synced ? (
                                 <><CheckCircle2 size={12} className="shrink-0" /> {t('proxy.cli_sync.status.synced', { defaultValue: '已同步' })}</>
                             ) : (
                                 <><AlertCircle size={12} className="shrink-0" /> {t('proxy.cli_sync.status.not_synced', { defaultValue: '未同步' })}</>
