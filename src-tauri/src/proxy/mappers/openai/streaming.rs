@@ -445,7 +445,7 @@ where
     let stream = async_stream::stream! {
         // 1. response.created
         let created_ev = json!({ "type": "response.created", "response": { "id": &response_id, "object": "response", "status": "in_progress", "output": [] } });
-        yield Ok::<Bytes, String>(Bytes::from(format!("data: {}\n\n", serde_json::to_string(&created_ev).unwrap())));
+        yield Ok::<Bytes, String>(Bytes::from(format!("event: response.created\ndata: {}\n\n", serde_json::to_string(&created_ev).unwrap())));
 
         // 2. response.output_item.added - 告诉客户端开始一个输出项
         let output_item_added = json!({
@@ -459,7 +459,7 @@ where
                 "content": []
             }
         });
-        yield Ok::<Bytes, String>(Bytes::from(format!("data: {}\n\n", serde_json::to_string(&output_item_added).unwrap())));
+        yield Ok::<Bytes, String>(Bytes::from(format!("event: response.output_item.added\ndata: {}\n\n", serde_json::to_string(&output_item_added).unwrap())));
 
         // 3. response.content_part.added - 告诉客户端开始一个文本内容块
         let content_part_added = json!({
@@ -472,7 +472,7 @@ where
                 "text": ""
             }
         });
-        yield Ok::<Bytes, String>(Bytes::from(format!("data: {}\n\n", serde_json::to_string(&content_part_added).unwrap())));
+        yield Ok::<Bytes, String>(Bytes::from(format!("event: response.content_part.added\ndata: {}\n\n", serde_json::to_string(&content_part_added).unwrap())));
 
         let mut emitted_tool_calls = std::collections::HashSet::new();
         let mut accumulated_text = String::new();
@@ -514,7 +514,7 @@ where
                                                                         "content_index": 0,
                                                                         "delta": text
                                                                     });
-                                                                    yield Ok::<Bytes, String>(Bytes::from(format!("data: {}\n\n", serde_json::to_string(&reasoning_ev).unwrap())));
+                                                                    yield Ok::<Bytes, String>(Bytes::from(format!("event: response.reasoning.delta\ndata: {}\n\n", serde_json::to_string(&reasoning_ev).unwrap())));
                                                                 } else {
                                                                     accumulated_text.push_str(text);
                                                                     // 4. response.output_text.delta - 文本增量
@@ -525,7 +525,7 @@ where
                                                                         "content_index": 0,
                                                                         "delta": text
                                                                     });
-                                                                    yield Ok::<Bytes, String>(Bytes::from(format!("data: {}\n\n", serde_json::to_string(&delta_ev).unwrap())));
+                                                                    yield Ok::<Bytes, String>(Bytes::from(format!("event: response.output_text.delta\ndata: {}\n\n", serde_json::to_string(&delta_ev).unwrap())));
                                                                 }
                                                             }
                                                         }
@@ -575,7 +575,7 @@ where
                                                             "content_index": 0,
                                                             "delta": grounding_text
                                                         });
-                                                        yield Ok::<Bytes, String>(Bytes::from(format!("data: {}\n\n", serde_json::to_string(&delta_ev).unwrap())));
+                                                        yield Ok::<Bytes, String>(Bytes::from(format!("event: response.output_text.delta\ndata: {}\n\n", serde_json::to_string(&delta_ev).unwrap())));
                                                     }
                                                 }
                                             }
@@ -600,7 +600,7 @@ where
             "content_index": 0,
             "text": &accumulated_text
         });
-        yield Ok::<Bytes, String>(Bytes::from(format!("data: {}\n\n", serde_json::to_string(&text_done).unwrap())));
+        yield Ok::<Bytes, String>(Bytes::from(format!("event: response.output_text.done\ndata: {}\n\n", serde_json::to_string(&text_done).unwrap())));
 
         // 6. response.content_part.done
         let content_part_done = json!({
@@ -613,7 +613,7 @@ where
                 "text": &accumulated_text
             }
         });
-        yield Ok::<Bytes, String>(Bytes::from(format!("data: {}\n\n", serde_json::to_string(&content_part_done).unwrap())));
+        yield Ok::<Bytes, String>(Bytes::from(format!("event: response.content_part.done\ndata: {}\n\n", serde_json::to_string(&content_part_done).unwrap())));
 
         // 7. response.output_item.done
         let output_item_done = json!({
@@ -630,7 +630,7 @@ where
                 }]
             }
         });
-        yield Ok::<Bytes, String>(Bytes::from(format!("data: {}\n\n", serde_json::to_string(&output_item_done).unwrap())));
+        yield Ok::<Bytes, String>(Bytes::from(format!("event: response.output_item.done\ndata: {}\n\n", serde_json::to_string(&output_item_done).unwrap())));
 
         // 8. response.completed
         let completed_ev = json!({
@@ -650,7 +650,7 @@ where
                 }]
             }
         });
-        yield Ok::<Bytes, String>(Bytes::from(format!("data: {}\n\n", serde_json::to_string(&completed_ev).unwrap())));
+        yield Ok::<Bytes, String>(Bytes::from(format!("event: response.completed\ndata: {}\n\n", serde_json::to_string(&completed_ev).unwrap())));
     };
     Box::pin(stream)
 }
