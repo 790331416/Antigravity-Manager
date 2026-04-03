@@ -1101,10 +1101,28 @@ pub async fn handle_completions(
             );
             obj.insert("messages".to_string(), json!(messages));
         }
-    } else if already_normalized {
-        tracing::debug!(
-            "[Codex] Skipping normalization (messages already populated by first pass)"
-        );
+    } else if has_codex_fields {
+        // [FIX] 如果 Pass 1 已经处理了 (already_normalized = true)
+        // 但如果 input 是字符串，Pass 1 的 input_items 实际上是 None，于是并没有添加 user message！
+        // 我们需要检查这里 messages 是不是只有 system message。
+        let messages_arr = body.get("messages").and_then(|m| m.as_array());
+        let has_user_message = messages_arr
+            .map(|arr| arr.iter().any(|m| m.get("role").and_then(|v| v.as_str()) == Some("user")))
+            .unwrap_or(false);
+            
+        if !has_user_message {
+            if let Some(input) = body.get("input").and_then(|v| v.as_str()) {
+                if let Some(obj) = body.as_object_mut() {
+                    if let Some(messages) = obj.get_mut("messages").and_then(|m| m.as_array_mut()) {
+                        messages.push(json!({
+                            "role": "user",
+                            "content": input
+                        }));
+                    }
+                }
+                tracing::debug!("[Codex] Appended string input to existing messages as user note");
+            }
+        }
     }
 
     let mut openai_req: OpenAIRequest = match serde_json::from_value(body.clone()) {

@@ -658,11 +658,7 @@ pub fn sync_config(app: &CliApp, proxy_url: &str, api_key: &str, model: Option<&
 #[tauri::command]
 pub async fn get_cli_sync_status(app_type: CliApp, proxy_url: String) -> Result<CliStatus, String> {
     let (installed, version) = check_cli_installed(&app_type);
-    let (is_synced, has_backup, current_base_url) = if installed {
-        get_sync_status(&app_type, &proxy_url)
-    } else {
-        (false, false, None)
-    };
+    let (is_synced, has_backup, current_base_url) = get_sync_status(&app_type, &proxy_url);
 
     Ok(CliStatus {
         installed,
