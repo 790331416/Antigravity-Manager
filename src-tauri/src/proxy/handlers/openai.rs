@@ -1111,7 +1111,9 @@ pub async fn handle_completions(
             .unwrap_or(false);
             
         if !has_user_message {
-            if let Some(input) = body.get("input").and_then(|v| v.as_str()) {
+            // Clone input string first to avoid borrow conflict (E0502)
+            let input_str = body.get("input").and_then(|v| v.as_str()).map(|s| s.to_string());
+            if let Some(input) = input_str {
                 if let Some(obj) = body.as_object_mut() {
                     if let Some(messages) = obj.get_mut("messages").and_then(|m| m.as_array_mut()) {
                         messages.push(json!({
