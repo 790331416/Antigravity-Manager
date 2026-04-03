@@ -278,9 +278,9 @@ export const CliSyncCard = ({ proxyUrl, apiKey, className }: CliSyncCardProps) =
                                         <Loader2 size={10} className="animate-spin" />
                                         {t('proxy.cli_sync.status.detecting')}
                                     </div>
-                                ) : status?.installed ? (
+                                ) : status?.installed || app === 'Codex' ? (
                                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold whitespace-nowrap">
-                                        {t('proxy.cli_sync.status.installed', { version: status.version })}
+                                        {app === 'Codex' ? '已就绪' : t('proxy.cli_sync.status.installed', { version: status?.version })}
                                     </span>
                                 ) : (
                                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 font-medium whitespace-nowrap">
@@ -292,7 +292,7 @@ export const CliSyncCard = ({ proxyUrl, apiKey, className }: CliSyncCardProps) =
                     </div>
 
                     {/* Show Sync Status if installed OR if it's OpenCode (which we now allow configuring even if not installed) */}
-                    {!isAppLoading && (status?.installed || app === 'OpenCode' && status?.current_base_url) && (
+                    {!isAppLoading && (status?.installed || app === 'Codex' || app === 'OpenCode' && status?.current_base_url) && (
                         <div className={cn(
                             "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wide transition-all h-6 shrink-0 whitespace-nowrap shadow-sm",
                             status.is_synced
@@ -384,7 +384,7 @@ export const CliSyncCard = ({ proxyUrl, apiKey, className }: CliSyncCardProps) =
                         )}
                         <button
                             onClick={() => handleSync(app)}
-                            disabled={(app !== 'OpenCode' && !status?.installed) || isAppSyncing || isAppLoading}
+                            disabled={(app !== 'OpenCode' && app !== 'Codex' && !status?.installed) || isAppSyncing || isAppLoading}
                             className={cn(
                                 "btn btn-sm flex-1 gap-2 rounded-xl transition-all font-bold shadow-sm",
                                 status?.is_synced
