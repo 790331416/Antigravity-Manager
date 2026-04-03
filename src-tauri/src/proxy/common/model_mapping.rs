@@ -115,6 +115,13 @@ static CLAUDE_TO_GEMINI: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|
 /// assert_eq!(map_claude_model_to_gemini("claude-sonnet-5"), "claude-sonnet-5");
 /// ```
 pub fn map_claude_model_to_gemini(input: &str) -> String {
+    // 0. [NEW] Native Codex Model Alias Support (Prefix matching)
+    if input.starts_with("gpt-5.4") { return "gemini-3.1-pro-high".to_string(); }
+    if input.starts_with("gpt-5.2") { return "claude-opus-4-6-thinking".to_string(); }
+    if input.starts_with("gpt-5") { return "gemini-3.1-pro-high".to_string(); }
+    if input.starts_with("o1-") { return "gemini-3.1-pro-high".to_string(); }
+    if input.starts_with("o3-") { return "gemini-3.1-pro-high".to_string(); }
+
     // 1. Check exact match in map
     if let Some(mapped) = CLAUDE_TO_GEMINI.get(input) {
         return mapped.to_string();

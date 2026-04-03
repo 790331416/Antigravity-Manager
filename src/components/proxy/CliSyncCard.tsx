@@ -366,7 +366,7 @@ export const CliSyncCard = ({ proxyUrl, apiKey, className }: CliSyncCardProps) =
                                 <button
                                     onClick={() => handleRestore(app)}
                                     className="p-1 text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded transition-colors"
-                                    title={t(app === 'OpenCode' ? 'proxy.opencode_sync.btn_restore' : 'proxy.cli_sync.btn_restore', { defaultValue: 'Restore' })}
+                                    title={app === 'Codex' ? '一键清理还原' : t(app === 'OpenCode' ? 'proxy.opencode_sync.btn_restore' : 'proxy.cli_sync.btn_restore', { defaultValue: 'Restore' })}
                                 >
                                     <RotateCcw size={14} />
                                 </button>
@@ -397,7 +397,7 @@ export const CliSyncCard = ({ proxyUrl, apiKey, className }: CliSyncCardProps) =
                             ) : (
                                 <RefreshCw size={14} className={cn(isAppLoading && "animate-spin-once")} />
                             )}
-                            {t('proxy.cli_sync.btn_sync')}
+                            {app === 'Codex' ? '一键反代理 Codex' : t('proxy.cli_sync.btn_sync')}
                         </button>
                     </div>
                 </div>
